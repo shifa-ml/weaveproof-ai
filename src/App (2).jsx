@@ -1,0 +1,112 @@
+import React, { useEffect, useRef, useState } from "react";
+import { ArrowLeft, ArrowRight, ArrowUpRight, Award, Camera, CheckCircle2, ChevronRight, Copy, Download, Feather, Heart, HelpCircle, Image as ImageIcon, Info, Leaf, MapPin, QrCode, ScanLine, ShieldCheck, Sparkles, Upload, X, AlertTriangle, BookOpen, Clock } from "lucide-react";
+import { Html5Qrcode } from "html5-qrcode";
+import QRCode from "qrcode";
+import loomtraceLogo from "./download.png";
+import { products, ui } from "./data.js";
+
+const palette = { forest: "#263D35", muga: "#D4B06A", assam: "#8B2E2E", ivory: "#F7F1E7" };
+const statusText = (p, t) => p.status === "verified" ? t.verified : p.status === "incomplete" ? t.incomplete : t.invalid;
+const getName = (p, lang) => p?.name?.[lang] || p?.name?.en || "Handloom product";
+
+function BrandLogo({ compact = false, onClick, reversed = false }) {
+  return <button className={`brand-logo ${compact ? "brand-logo-compact" : ""} ${reversed ? "brand-logo-reversed" : ""}`} onClick={onClick} aria-label="LOOMTRACE AI home" title="LOOMTRACE AI — Every thread has a story.">
+    <img src={loomtraceLogo} alt="LOOMTRACE AI — Every thread has a story" />
+  </button>;
+}
+
+function Header({ onHome, onScan, onSample, onBrand }) {
+  return <header className="site-header"><div className="header-inner">
+    <BrandLogo onClick={onHome} />
+    <nav className="desktop-nav"><button onClick={onHome}>Registry</button><button onClick={onSample}><QrCode size={15}/> Demo Weave Tag</button><button onClick={onBrand}><ImageIcon size={15}/> Brand Reference</button></nav>
+    <div className="header-actions"><button className="sample-pill" onClick={onSample}><Sparkles size={15}/> Sample QR</button><button className="btn btn-red header-scan" onClick={onScan}><Camera size={17}/> <span>Scan a Weave</span></button></div>
+  </div></header>;
+}
+
+function Footer({ onScan, onSample, onBrand }) {
+  return <footer className="site-footer"><div className="footer-grid">
+    <section className="footer-brand"><BrandLogo reversed/><p>Celebrating the craft, culture and stories woven into Assam’s handloom traditions. Product details shown here are demonstration records unless independently verified.</p><div className="footer-note"><ShieldCheck size={16}/> A digital passport prototype for handloom provenance</div></section>
+    <section><h4>SCANNER & REGISTRY</h4><button onClick={onScan}>Live Camera QR Scanner</button><button onClick={onSample}>Sample Demo QR Code</button><button onClick={onBrand}>Brand Guidelines</button></section>
+    <section><h4>ASSAM HERITAGE SILKS</h4><p><b>Muga silk</b> — known for its distinctive golden sheen.</p><p><b>Eri silk</b> — valued for its soft texture and warmth.</p><p><b>Paat silk</b> — fine mulberry silk used in elegant woven textiles.</p></section>
+  </div><div className="footer-bottom"><span>© 2026 LOOMTRACE AI · Every thread has a story.</span><span>Crafted with <Heart size={13} fill="currentColor"/> for Assam handlooms</span></div></footer>;
+}
+
+function ProductCard({ product, lang, onSelect }) {
+  return <article className="product-card"><button className="product-image" onClick={() => onSelect(product)} aria-label={`Open ${getName(product,lang)}`}><img src={product.image} alt={getName(product,lang)}/><span className={`status status-${product.status}`}>{statusText(product, ui.en)}</span><span className="image-arrow"><ArrowUpRight size={17}/></span></button><div className="product-card-body"><span className="product-type">{product.type} · {product.location}</span><h3>{getName(product,lang)}</h3><p className="product-id">{product.id}</p><button className="text-link" onClick={() => onSelect(product)}>Inspect passport <ArrowRight size={15}/></button></div></article>;
+}
+
+function HomeView({ lang, onScan, onSample, onSelect, onUnknown, onInvalid }) {
+  const t = ui[lang] || ui.en;
+  return <div className="page-wrap home-page">
+    <section className="hero-panel"><div className="hero-copy"><div className="eyebrow"><Sparkles size={14}/> CRYPTOGRAPHIC ASSAM HANDLOOM VERIFICATION</div><h1>Authentic weaves.<br/><em>Every thread</em> has a story.</h1><p>Discover the people, materials and traditions behind Assam’s handloom textiles through a digital product passport.</p><div className="hero-buttons"><button className="btn btn-red btn-large" onClick={onScan}><Camera size={19}/> Scan a Weave <ArrowRight size={16}/></button><button className="btn btn-outline-light btn-large" onClick={onSample}><QrCode size={18}/> Sample QR Code</button></div><div className="hero-trust"><span><ShieldCheck/> Product record status</span><span><Feather/> Craft and material details</span><span><Award/> Artisan provenance fields</span></div></div><div className="hero-art"><div className="hero-art-ring">✳</div><span>ASSAMESE TEXTILE HERITAGE</span><small>COLOUR · CRAFT · CULTURE</small></div></section>
+    <section className="section-block test-bench"><div className="section-heading"><div><span className="eyebrow eyebrow-light">VERIFICATION SUITE</span><h2>QR scanner test bench</h2><p>Try known sample records and confirm that unknown or unrelated QR content is rejected safely.</p></div><button className="btn btn-forest" onClick={onSample}><QrCode size={16}/> Open sample QR</button></div><div className="test-grid">
+      <div className="test-card test-pass"><div className="test-label">PASS TARGET 01 <CheckCircle2 size={16}/></div><h3>Registered sample</h3><code>{products[0]?.id || "WEAVE-001"}</code><p>Open a product record from the local demonstration registry.</p><button onClick={() => onSelect(products[0])}>Simulate scan <ChevronRight size={15}/></button></div>
+      <div className="test-card test-pass"><div className="test-label">PASS TARGET 02 <CheckCircle2 size={16}/></div><h3>Second sample</h3><code>{products[1]?.id || "WEAVE-002"}</code><p>Inspect a different sample textile record.</p><button onClick={() => onSelect(products[1] || products[0])}>Simulate scan <ChevronRight size={15}/></button></div>
+      <div className="test-card test-warn"><div className="test-label">SAFETY GUARD 01 <AlertTriangle size={16}/></div><h3>Unregistered weave ID</h3><code>LT-XX-9999-FAKE</code><p>A serial-like identifier that is not in the registry.</p><button onClick={onUnknown}>Test safe rejection <ChevronRight size={15}/></button></div>
+      <div className="test-card test-danger"><div className="test-label">SAFETY GUARD 02 <AlertTriangle size={16}/></div><h3>Unrelated QR content</h3><code>https://example.com</code><p>Random URLs or text should not be treated as a weave passport.</p><button onClick={onInvalid}>Test safe rejection <ChevronRight size={15}/></button></div>
+    </div><div className="security-note"><HelpCircle size={17}/><p><b>Camera notes:</b> Permission is requested only when you start scanning. Camera access generally requires localhost or HTTPS. If your webcam is pointed at a QR code on another screen, keep the code bright, flat and in focus.</p></div></section>
+    <section className="section-block collection"><div className="section-heading"><div><span className="eyebrow eyebrow-light">VERIFIED HANDLOOM ARCHIVE</span><h2>Explore weave passports</h2><p>Open a sample record to inspect its craft details and record status.</p></div><span className="collection-count">{products.length} sample records</span></div><div className="product-grid">{products.map(product => <ProductCard key={product.id} product={product} lang={lang} onSelect={onSelect}/>)}</div></section>
+  </div>;
+}
+
+function PassportView({ product, lang, onBack, onScan, onSample }) {
+  const t = ui[lang] || ui.en;
+  const [story, setStory] = useState(product.story?.[lang] || product.story?.en || "A sample story for this product is not available yet.");
+  const [storySource, setStorySource] = useState("approved");
+  const [storyBusy, setStoryBusy] = useState(false);
+  const [storyError, setStoryError] = useState("");
+  const facts = [{label:t.maker,value:product.artisan},{label:t.origin,value:product.location},{label:t.technique,value:product.technique},{label:t.materials,value:product.materials},{label:"Registration date",value:product.registrationDate},{label:"Recorded hash",value:product.recordedHash},{label:"Loom",value:product.loomSpecification},{label:"Production hours",value:product.productionHours},{label:"Reported footprint",value:product.carbonFootprint},{label:"GI reference",value:product.giReference || "No GI claim recorded"}];
+  const approvedStory = product.story?.[lang] || product.story?.en || "A sample story for this product is not available yet.";
+  async function generateStory() {
+    setStoryBusy(true); setStoryError("");
+    try {
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 9000);
+      const base = (import.meta.env.VITE_API_BASE_URL || "").replace(/\/$/, "");
+      const response = await fetch(`${base}/api/generate-story`, { method: "POST", headers: { "Content-Type": "application/json" }, signal: controller.signal,
+        body: JSON.stringify({ product: { name: getName(product, lang), material: product.materials || "Not provided", origin: product.location || "Not provided", craft: product.technique || "Not provided" }, language: lang === "as" ? "Assamese" : "English" }) });
+      clearTimeout(timeout);
+      if (!response.ok) throw new Error("Story service unavailable");
+      const result = await response.json();
+      if (!result.story) throw new Error("No story was returned");
+      setStory(result.story); setStorySource("ai");
+    } catch {
+      setStory(approvedStory); setStorySource("approved"); setStoryError(t.fallback);
+    } finally { setStoryBusy(false); }
+  }
+  return <div className="page-wrap passport-page"><button className="back-link" onClick={onBack}><ArrowLeft size={16}/> Back to registry</button><div className="passport-status-banner"><div className="banner-icon"><ShieldCheck size={27}/></div><div><span className={`status status-${product.status}`}>{statusText(product,t)}</span><h1>Digital weave passport <code>{product.id}</code></h1><p>This page describes the digital sample record, not a physical authentication result.</p></div><button className="btn btn-red" onClick={onScan}><Camera size={16}/> Scan another</button></div><div className="passport-grid"><section className="passport-main card-surface"><div className="passport-photo"><img src={product.image} alt={getName(product,lang)}/><span>{product.type}</span></div><div className="passport-main-content"><h2>{getName(product,lang)}</h2><p className="muted">{product.location}</p><div className="facts-grid">{facts.map(f=><div className="fact" key={f.label}><span>{f.label}</span><b>{f.value || "Not provided"}</b></div>)}</div><div className="notice"><Info size={16}/>{t.disclaimer}</div><button className="btn btn-forest" onClick={onSample}><QrCode size={16}/> View weave QR tag</button></div></section><aside className="passport-aside"><section className="card-surface artisan-card"><span className="eyebrow eyebrow-light">CRAFT & ORIGIN</span><h3>{t.storyPage}</h3><p className="story-copy" aria-live="polite">{story}</p><div className="story-meta">{storySource === "ai" ? t.ai : t.saved}</div>{storyError && <p className="story-fallback" role="status">{storyError}</p>}<button className="btn btn-forest story-generate" onClick={generateStory} disabled={storyBusy}><Sparkles size={16}/>{storyBusy ? t.generating : t.generate}</button><p className="story-review-note">{t.note}</p><div className="mini-detail"><MapPin size={16}/><span>{product.location}</span></div><div className="mini-detail"><Leaf size={16}/><span>{product.materials}</span></div><div className="mini-detail"><Clock size={16}/><span>{product.technique}</span></div></section><section className="card-surface record-card"><h3><ShieldCheck size={17}/> Record details</h3><div className="record-id"><span>Product identifier</span><b>{product.id}</b></div><p className="small-disclaimer">No blockchain transaction or independent GI certification is asserted by this demo interface.</p><button className="btn btn-outline-dark full-width" onClick={async()=>{try{await navigator.clipboard.writeText(`${location.origin}/?product=${encodeURIComponent(product.id)}`)}catch{} }}> <Copy size={15}/> Copy product link</button></section></aside></div></div>;
+}
+
+function Modal({ title, onClose, children, wide = false }) { return <div className="modal-backdrop" role="presentation" onMouseDown={e=>{if(e.target===e.currentTarget)onClose()}}><section className={`modal-card ${wide?"modal-wide":""}`} role="dialog" aria-modal="true" aria-label={title}><div className="modal-heading"><h2>{title}</h2><button className="icon-button" onClick={onClose} aria-label="Close"><X size={19}/></button></div>{children}</section></div>; }
+
+function QRScannerModal({ open, onClose, onDecoded, onSample }) {
+  const scanRef=useRef(null); const [error,setError]=useState(""); const [running,setRunning]=useState(false); const [manual,setManual]=useState(""); const [uploadBusy,setUploadBusy]=useState(false); const fileRef=useRef(null);
+  useEffect(()=>{ if(!open){stop();return;} return ()=>{stop();}; },[open]);
+  async function stop(){const s=scanRef.current;if(s){try{if(s.isScanning)await s.stop()}catch{}try{await s.clear()}catch{}scanRef.current=null;}setRunning(false);}
+  async function start(){setError("");await stop();const el=document.getElementById("loomtrace-qr-reader");if(!el){setError("Scanner area unavailable. Close and reopen the scanner.");return;}const scanner=new Html5Qrcode("loomtrace-qr-reader",{verbose:false});scanRef.current=scanner;try{await scanner.start({facingMode:"environment"},{fps:10,disableFlip:false},async text=>{await stop();onDecoded(text);},()=>{});setRunning(true);}catch(err){console.error("LOOMTRACE scanner startup failed",err);try{if(scanner.isScanning)await scanner.stop()}catch{}try{await scanner.clear()}catch{}if(scanRef.current===scanner)scanRef.current=null;setRunning(false);setError("Camera could not start. Allow camera permission, use localhost/HTTPS, or upload a QR image.");}}
+  async function upload(e){const file=e.target.files?.[0];if(!file)return;setUploadBusy(true);setError("");let reader;try{reader=new Html5Qrcode("loomtrace-qr-reader");const text=await reader.scanFile(file,true);await reader.clear();onDecoded(text);}catch{try{await reader?.clear()}catch{}setError("Could not read this QR image. Try a clearer image or enter the product ID below.");}finally{setUploadBusy(false);e.target.value="";}}
+  if(!open)return null;
+  return <Modal title="Scan a weave" onClose={async()=>{await stop();onClose();}}><p className="modal-intro">Point your camera at a LOOMTRACE product QR code, or upload an image.</p><div className="scanner-frame"><div id="loomtrace-qr-reader"/><div className="scanner-placeholder" hidden={running}><QrCode size={44}/><span>Camera preview appears here</span></div></div>{error&&<div className="inline-error"><AlertTriangle size={16}/>{error}</div>}<div className="modal-actions"><button className="btn btn-red" onClick={running?stop:start}><Camera size={16}/>{running?"Stop camera":"Start camera"}</button><button className="btn btn-outline-dark" onClick={()=>fileRef.current?.click()} disabled={uploadBusy}><Upload size={16}/>{uploadBusy?"Reading…":"Upload QR image"}</button><input ref={fileRef} type="file" accept="image/*" hidden onChange={upload}/></div><form className="manual-lookup" onSubmit={e=>{e.preventDefault();if(manual.trim())onDecoded(manual.trim())}}><label htmlFor="manual-product">Or enter a product ID</label><div><input id="manual-product" value={manual} onChange={e=>setManual(e.target.value)} placeholder="WEAVE-001"/><button className="btn btn-forest">Find</button></div></form><button className="text-link modal-sample-link" onClick={onSample}>Open sample QR for second-screen testing <ArrowRight size={14}/></button></Modal>;
+}
+
+function SampleQRModal({ open, onClose, product }) { const [qr,setQr]=useState("");useEffect(()=>{if(open&&product){QRCode.toDataURL(`${location.origin}/?product=${encodeURIComponent(product.id)}`,{width:360,margin:2,color:{dark:palette.forest,light:"#ffffff"}}).then(setQr).catch(()=>setQr(""));}},[open,product]);if(!open)return null;return <Modal title="Sample weave QR" onClose={onClose}><p className="modal-intro">Use this sample code to test the scanner. It opens a local demo product record.</p><div className="sample-qr-wrap">{qr?<img src={qr} alt={`Sample QR for ${product.id}`}/>:<div className="qr-loading">Preparing QR…</div>}<b>{product.id}</b><span>{getName(product,"en")}</span></div><div className="modal-actions"><button className="btn btn-forest" onClick={()=>{const a=document.createElement("a");a.href=qr;a.download=`${product.id}-qr.png`;a.click()}} disabled={!qr}><Download size={16}/> Download QR</button><button className="btn btn-red" onClick={onClose}>Done</button></div></Modal>; }
+
+function UnrecognizedModal({ state, onClose, onScan, onHome }) { if(!state)return null;return <Modal title={state.type==="UNKNOWN_ID"?"Unregistered weave ID":"Unrecognized QR content"} onClose={onClose}><div className="unrecognized-icon"><AlertTriangle size={28}/></div><p className="modal-intro">{state.message}</p><div className="scanned-content"><span>Scanned content</span><code>{state.raw}</code></div><div className="modal-actions"><button className="btn btn-red" onClick={onScan}><Camera size={16}/> Scan again</button><button className="btn btn-outline-dark" onClick={onHome}>Back to registry</button></div></Modal>; }
+
+function BrandReferenceModal({ open, onClose }) { if(!open)return null;return <Modal title="LOOMTRACE AI brand reference" onClose={onClose} wide><div className="brand-reference-preview"><img src={loomtraceLogo} alt="Exact LOOMTRACE AI logo"/></div><p className="modal-intro">Use the supplied logo artwork without recreating or replacing its lettering or Assamese-inspired motif.</p><div className="swatch-grid">{[["Forest Green","#263D35"],["Muga Gold","#D4B06A"],["Assam Red","#8B2E2E"],["Ivory","#F7F1E7"]].map(([n,c])=><div className="swatch" key={n}><span style={{background:c}}/><b>{n}</b><code>{c}</code></div>)}</div></Modal>; }
+
+export default function App(){
+  const [lang,setLang]=useState("en");const [selected,setSelected]=useState(null);const [scannerOpen,setScannerOpen]=useState(false);const [sampleOpen,setSampleOpen]=useState(false);const [brandOpen,setBrandOpen]=useState(false);const [unrecognized,setUnrecognized]=useState(null);const [toast,setToast]=useState("");
+  const activeProducts=products||[];const sampleProduct=selected||activeProducts[0];const t=ui[lang]||ui.en;
+  useEffect(()=>{const resolve=()=>{const params=new URLSearchParams(location.search);const raw=params.get("product")||params.get("id");if(raw){const found=activeProducts.find(p=>p.id.toLowerCase()===raw.toLowerCase());if(found)setSelected(found);}};resolve();window.addEventListener("popstate",resolve);return()=>window.removeEventListener("popstate",resolve);},[]);
+  function chooseProduct(product){if(!product){setUnrecognized({type:"UNKNOWN_ID",raw:"No sample record available",message:"The selected sample record does not exist in the local data file."});return;}setSelected(product);setScannerOpen(false);setUnrecognized(null);const u=new URL(location.href);u.searchParams.set("product",product.id);history.pushState({},"",u);window.scrollTo({top:0,behavior:"smooth"});}
+  function home(){setSelected(null);setUnrecognized(null);const u=new URL(location.href);u.searchParams.delete("product");u.searchParams.delete("id");history.pushState({},"",u);window.scrollTo({top:0,behavior:"smooth"});}
+  function decode(raw){const value=String(raw||"").trim();let id=value;try{const u=new URL(value);id=u.searchParams.get("product")||u.searchParams.get("id")||u.pathname.split("/").filter(Boolean).pop()||value;}catch{}const found=activeProducts.find(p=>p.id.toLowerCase()===decodeURIComponent(id).toLowerCase());if(found){chooseProduct(found);return;}const looksLikeId=/^(WEAVE-|LT-)/i.test(id);setUnrecognized({type:looksLikeId?"UNKNOWN_ID":"INVALID_CONTENT",raw:value,message:looksLikeId?`“${id}” was not found in the local weave registry. No product record has been invented.`:"This QR content is not a recognized LOOMTRACE product ID or product link."});}
+  return <div className="app-shell"><div className="top-pattern"/><Header onHome={home} onScan={()=>setScannerOpen(true)} onSample={()=>setSampleOpen(true)} onBrand={()=>setBrandOpen(true)}/><main className="main-content">{selected?<PassportView product={selected} lang={lang} onBack={home} onScan={()=>setScannerOpen(true)} onSample={()=>setSampleOpen(true)}/>:<><div className="language-row"><label htmlFor="language">Language</label><select id="language" value={lang} onChange={e=>setLang(e.target.value)}><option value="en">English</option><option value="as">অসমীয়া</option><option value="hi">हिन्दी</option></select></div><HomeView lang={lang} onScan={()=>setScannerOpen(true)} onSample={()=>setSampleOpen(true)} onSelect={chooseProduct} onUnknown={()=>setUnrecognized({type:"UNKNOWN_ID",raw:"LT-XX-9999-FAKE",message:"This identifier resembles a serial number but does not exist in the local registry. Never invent a product record."})} onInvalid={()=>setUnrecognized({type:"INVALID_CONTENT",raw:"https://example.com",message:"This is an unrelated URL, not a recognized LOOMTRACE product passport."})}/></>}</main><Footer onScan={()=>setScannerOpen(true)} onSample={()=>setSampleOpen(true)} onBrand={()=>setBrandOpen(true)}/>
+    <QRScannerModal open={scannerOpen} onClose={()=>setScannerOpen(false)} onDecoded={decode} onSample={()=>{setScannerOpen(false);setSampleOpen(true);}}/>
+    <SampleQRModal open={sampleOpen} onClose={()=>setSampleOpen(false)} product={sampleProduct}/>
+    <UnrecognizedModal state={unrecognized} onClose={()=>setUnrecognized(null)} onScan={()=>{setUnrecognized(null);setScannerOpen(true)}} onHome={home}/>
+    <BrandReferenceModal open={brandOpen} onClose={()=>setBrandOpen(false)}/>
+    {toast&&<div className="toast">{toast}</div>}
+  </div>;
+}
